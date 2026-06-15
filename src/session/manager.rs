@@ -601,7 +601,7 @@ mod tests {
     #[test]
     fn session_key_uses_resolved_connection_identity() {
         let target = ResolvedTarget {
-            name: Some("<password>".to_string()),
+            name: Some("devbox".to_string()),
             host: Some("devbox.example.com".to_string()),
             port: Some(22),
             username: Some("deploy".to_string()),

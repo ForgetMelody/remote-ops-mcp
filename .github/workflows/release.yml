@@ -80,7 +80,7 @@ jobs:
           name="remote-ops-mcp-${{ matrix.target }}"
           mkdir -p "dist/${name}"
           cp "target/${{ matrix.target }}/release/remote-ops-mcp" "dist/${name}/"
-          cp README.md config.example.toml "dist/${name}/"
+          cp README.md LICENSE config.example.toml "dist/${name}/"
           tar -C dist -czf "dist/${name}.tar.gz" "${name}"
           sha256sum "dist/${name}.tar.gz" > "dist/${name}.tar.gz.sha256"
 

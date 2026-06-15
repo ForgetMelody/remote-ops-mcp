@@ -16,7 +16,7 @@ host_key_policy = "openssh_default"
 # password = ""
 
 # 本机执行可直接省略 target，或传 target = "local"。
-# 临时远端可不写配置，工具调用 target 直接传 "deploy@devbox.example.com" 或 "deploy@devbox.example.com"。
+# 临时远端可不写配置，工具调用 target 直接传 "deploy@devbox.example.com" 或 "deploy@devbox.example.com:22"。
 # 常驻会话工具 remote_session_ensure 可额外传 session_tag 区分 run/ops 角色，keepalive_s 可映射为 OpenSSH ServerAliveInterval。
 # [targets.devbox]
 # host = "devbox.example.com"

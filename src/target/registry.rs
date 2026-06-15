@@ -194,8 +194,12 @@ mod tests {
     #[test]
     fn resolves_inline_user_host_port() {
         let config = AppConfig::default();
-        let target = resolve_target(&config, Some("deploy@devbox.example.com".to_string())).unwrap();
-        assert_eq!(target.name.as_deref(), Some("deploy@devbox.example.com"));
+        let target =
+            resolve_target(&config, Some("deploy@devbox.example.com:2222".to_string())).unwrap();
+        assert_eq!(
+            target.name.as_deref(),
+            Some("deploy@devbox.example.com:2222")
+        );
         assert_eq!(target.username.as_deref(), Some("deploy"));
         assert_eq!(target.host.as_deref(), Some("devbox.example.com"));
         assert_eq!(target.port, Some(2222));
@@ -215,18 +219,18 @@ mod tests {
         let mut config = AppConfig::default();
         config.defaults.auth = AuthConfig {
             method: AuthMethod::Password,
-            password: Some("<password>".to_string()),
+            password: Some("test-password".to_string()),
         };
         config.targets.insert(
-            "<password>".to_string(),
+            "devbox".to_string(),
             TargetConfig {
                 host: "devbox.example.com".to_string(),
                 username: Some("deploy".to_string()),
                 ..TargetConfig::default()
             },
         );
-        let target = resolve_target(&config, Some("<password>".to_string())).unwrap();
+        let target = resolve_target(&config, Some("devbox".to_string())).unwrap();
         assert_eq!(target.auth.method, AuthMethod::Password);
-        assert_eq!(target.auth.password.as_deref(), Some("<password>"));
+        assert_eq!(target.auth.password.as_deref(), Some("test-password"));
     }
 }

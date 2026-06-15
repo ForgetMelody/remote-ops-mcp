@@ -149,7 +149,7 @@ mod tests {
     #[test]
     fn password_target_uses_sshpass_without_argv_password() {
         let target = ResolvedTarget {
-            name: Some("<password>".to_string()),
+            name: Some("devbox".to_string()),
             host: Some("devbox.example.com".to_string()),
             port: Some(22),
             username: Some("deploy".to_string()),
@@ -157,12 +157,16 @@ mod tests {
             host_key_policy: "accept_new".to_string(),
             auth: AuthConfig {
                 method: AuthMethod::Password,
-                password: Some("<password>".to_string()),
+                password: Some("test-password".to_string()),
             },
         };
         let command = build_command(&target, "printf ok").unwrap();
         assert_eq!(command.as_std().get_program(), "sshpass");
         let args: Vec<_> = command.as_std().get_args().collect();
-        assert!(!args.iter().any(|arg| arg.to_string_lossy().contains("<password>")));
+        assert!(
+            !args
+                .iter()
+                .any(|arg| arg.to_string_lossy().contains("test-password"))
+        );
     }
 }
