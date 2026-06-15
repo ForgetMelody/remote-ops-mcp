@@ -125,6 +125,19 @@ src/
 - `remote_job_status`
 - `remote_job_list`
 
+### 常驻会话
+
+- `remote_session_open`
+- `remote_session_ensure`
+- `remote_session_close`
+- `remote_session_get`
+- `remote_session_list`
+- `remote_session_exec`
+- `remote_session_start`
+- `remote_session_follow`
+- `remote_session_signal`
+- `remote_session_cancel`
+
 ### 文件传输
 
 - `remote_file_list`
@@ -142,12 +155,16 @@ src/
 | `initial_wait_s` | `remote_start` | `1` | 启动后首批输出等待 | 快速暴露启动失败 |
 | `follow_wait_s` | `remote_follow` | `5` | 无输出时长轮询等待 | 兼顾实时性和调用次数 |
 | `follow_limit` | `remote_follow` | `8192` | 单次输出字节上限 | 适合日志阅读 |
+| `keepalive_s` | `remote_session_open/ensure` | `30` 建议值，未传则不显式设置 | OpenSSH `ServerAliveInterval` | 旧版 viobot-remote 推荐 30s；不传时完全沿用 OpenSSH 默认行为 |
+| `session_tag` | `remote_session_open/ensure` | none | 区分同一目标上的 run/ops 等角色 | 默认最大化复用；需要并行角色时显式隔离 |
 | `output_max_bytes` | job | `8388608` | 每 job 输出环形缓冲 | 防止长日志吃满内存 |
 | `connect_timeout_s` | target | `10` | SSH 连接超时 | 网络故障快速失败 |
 | `file_backend` | file | `rsync` | 文件后端 | 第一版只启用可验证的成熟后端 |
 | `delete` | file sync | `false` | 是否删除目标多余文件 | 默认避免破坏远端数据 |
 | `checksum` | file sync | `false` | 是否强校验 | 默认更快 |
 | `host_key_policy` | target | `openssh_default` | host key 策略 | 尊重用户 OpenSSH 配置 |
+| `auth.method` | defaults/target | `openssh` | SSH 认证方式，支持 `openssh` / `password` | 默认沿用系统 OpenSSH 配置、密钥和 agent |
+| `auth.password` | defaults/target | none | `password` 认证的明文密码 | 默认不保存密码，只有显式配置才启用 |
 
 ## 错误模型
 
@@ -188,13 +205,12 @@ rsync -> sftp -> scp
 
 ## 安全边界
 
-必须保证：
-
-- secret 不进入日志和 transcript。
-- 不默认使用 `sshpass -p`。
-- 密码支持后续通过 `auth_ref`、环境变量或临时 askpass helper 实现。
+- secret 不进入 argv、MCP target 返回结构和正常 transcript；明文密码只从配置读入后通过环境变量交给子进程。
+- 不使用 `sshpass -p`；密码认证使用 `sshpass -e` 与 `SSHPASS`。
+- 当前已支持 `[defaults.auth]` 和 `[targets.devbox]` 的 `method = "password"` / `password = "<password>"` 明文配置；后续仍可扩展 `auth_ref` 或 askpass helper。
 - 默认尊重 OpenSSH host key 校验。
 - 命令后端不通过 shell 拼接执行。
+- 常驻会话复用 OpenSSH 子进程，不保存明文密码到 `SessionInfo` 或命令记录；password 模式只在创建子进程时通过 `SSHPASS` 传递。
 
 ## 落地路线
 
@@ -202,7 +218,7 @@ rsync -> sftp -> scp
 2. 命令 Job MVP。
 3. 文件传输 MVP。
 4. 配置、安全、脱敏。
-5. 会话池和 OpenSSH ControlMaster。
+5. 常驻 OpenSSH shell 会话池。
 6. 发布和回归验证。
 
 ## 当前施工范围
@@ -218,15 +234,20 @@ rsync -> sftp -> scp
 - `remote_start` / `remote_follow` / `remote_stop` MVP。
 - `remote_file_list` / `remote_file_stat` / `remote_file_sync` / `remote_file_compare` MVP。
 - 基础单元测试。
+- 临时内联 target：`[user@]devbox.example.com[:port]`。
+- 配置热加载：每次工具调用重读 `--config`。
+- 明文密码认证：`[defaults.auth]` / `[targets.devbox]` + `sshpass -e`。
+- 常驻 OpenSSH shell 会话：`remote_session_open/ensure/exec/start/follow/signal/cancel`。
 
 ## 当前落地状态
 
-- 项目目录：`/path/to/remote-ops-mcp`。
-- Git：本地仓库已初始化。
 - 已采用 `rmcp` stdio server。
-- 命令 MVP 支持本机执行和 OpenSSH 远程执行。
+- 命令 MVP 支持本机、命名 target、OpenSSH 远程执行和临时内联 target。
 - Job MVP 支持 start、follow、stop、status、list。
 - 文件 MVP 使用系统 `rsync`，本机/远端路径统一由 target 决定。
+- 配置按工具调用热加载，更新 `--config` 指向文件后无需重启 MCP server。
+- 认证支持默认 OpenSSH 和显式明文密码；明文密码经 `SSHPASS` 环境变量传给 `sshpass -e`。
+- 会话池使用常驻 `ssh` / `sshpass -e ssh` 子进程和远端 shell marker 协议；按解析后的 `host + port + username + session_tag` 复用 idle 会话，busy 会话不复用。
 
 ## 验证命令
 

@@ -34,6 +34,22 @@ async fn lists_tools_and_exercises_local_job_and_file_tools() {
     assert!(names.contains(&"remote_run"));
     assert!(names.contains(&"remote_start"));
     assert!(names.contains(&"remote_file_sync"));
+    assert!(names.contains(&"remote_session_ensure"));
+    assert!(names.contains(&"remote_session_exec"));
+    assert!(names.contains(&"remote_session_follow"));
+
+    let health = service
+        .call_tool(CallToolRequestParams {
+            meta: None,
+            name: "remote_backend_health".into(),
+            arguments: None,
+            task: None,
+        })
+        .await
+        .expect("call remote_backend_health");
+    let health = tool_json(health);
+    assert_eq!(health["ok"], true);
+    assert!(health["data"]["tools"].get("sshpass").is_some());
 
     let run = service
         .call_tool(CallToolRequestParams {

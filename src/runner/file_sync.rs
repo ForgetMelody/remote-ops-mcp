@@ -6,7 +6,10 @@ use tokio::process::Command;
 
 use crate::{
     error::{ErrorKind, RemoteOpsError, Result},
-    runner::process::{ProcessOutput, run_command},
+    runner::{
+        process::{ProcessOutput, run_command},
+        ssh::{build_rsync_remote_shell, build_ssh_base},
+    },
     target::ResolvedTarget,
 };
 
@@ -47,9 +50,12 @@ pub async fn list_path(
         cmd.arg(path).arg("-maxdepth").arg("1").arg("-print");
         return run_command(cmd, timeout_s).await;
     }
-    let mut cmd = ssh_base(target);
-    cmd.arg(format!("find {} -maxdepth 1 -print", shell_quote(path)));
-    run_command(cmd, timeout_s).await
+    let mut command = build_ssh_base(target)?;
+    if let Some(destination) = target.ssh_destination() {
+        command.arg(destination);
+    }
+    command.arg(format!("find {} -maxdepth 1 -print", shell_quote(path)));
+    run_command(command, timeout_s).await
 }
 
 pub async fn stat_path(
@@ -62,9 +68,12 @@ pub async fn stat_path(
         cmd.arg(path);
         return run_command(cmd, timeout_s).await;
     }
-    let mut cmd = ssh_base(target);
-    cmd.arg(format!("stat {}", shell_quote(path)));
-    run_command(cmd, timeout_s).await
+    let mut command = build_ssh_base(target)?;
+    if let Some(destination) = target.ssh_destination() {
+        command.arg(destination);
+    }
+    command.arg(format!("stat {}", shell_quote(path)));
+    run_command(command, timeout_s).await
 }
 
 pub async fn sync_path(
@@ -145,11 +154,11 @@ async fn run_rsync(target: &ResolvedTarget, options: SyncOptions<'_>) -> Result<
         cmd.arg("--dry-run").arg("--itemize-changes");
     }
     if !target.is_local() {
-        cmd.arg("-e").arg(format!(
-            "ssh -p {} -o ConnectTimeout={}",
-            target.port.unwrap_or(22),
-            target.connect_timeout_s
-        ));
+        let (remote_shell, password) = build_rsync_remote_shell(target)?;
+        cmd.arg("-e").arg(remote_shell);
+        if let Some(password) = password {
+            cmd.env("SSHPASS", password);
+        }
     }
     let remote = if target.is_local() {
         options.remote_path.to_string()
@@ -174,18 +183,6 @@ async fn run_rsync(target: &ResolvedTarget, options: SyncOptions<'_>) -> Result<
         }
     }
     run_command(cmd, options.timeout_s).await
-}
-
-fn ssh_base(target: &ResolvedTarget) -> Command {
-    let mut cmd = Command::new("ssh");
-    cmd.arg("-p")
-        .arg(target.port.unwrap_or(22).to_string())
-        .arg("-o")
-        .arg(format!("ConnectTimeout={}", target.connect_timeout_s));
-    if let Some(destination) = target.ssh_destination() {
-        cmd.arg(destination);
-    }
-    cmd
 }
 
 fn shell_quote(input: &str) -> String {

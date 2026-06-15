@@ -10,8 +10,20 @@ follow_limit = 8192
 output_max_bytes = 8388608
 host_key_policy = "openssh_default"
 
+# 默认认证方式：openssh 使用系统 ssh config、密钥和 agent；password 使用 sshpass -e。
+# [defaults.auth]
+# method = "openssh"
+# password = ""
+
 # 本机执行可直接省略 target，或传 target = "local"。
+# 临时远端可不写配置，工具调用 target 直接传 "deploy@devbox.example.com" 或 "deploy@devbox.example.com"。
+# 常驻会话工具 remote_session_ensure 可额外传 session_tag 区分 run/ops 角色，keepalive_s 可映射为 OpenSSH ServerAliveInterval。
 # [targets.devbox]
 # host = "devbox.example.com"
 # port = 22
 # username = "deploy"
+# host_key_policy = "accept_new"
+#
+# [targets.devbox.auth]
+# method = "password"
+# password = "<password>"

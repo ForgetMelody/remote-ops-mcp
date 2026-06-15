@@ -5,6 +5,7 @@ use crate::{
     error::RemoteError,
     job::{FollowResult, JobStatus},
     runner::file_sync::{FileCommandResult, SyncDirection},
+    session::{SessionExecResult, SessionFollowResult, SessionInfo, SessionSignalResult},
     target::ResolvedTarget,
 };
 
@@ -70,6 +71,52 @@ pub struct FileCompareRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SessionOpenRequest {
+    pub target: Option<String>,
+    pub session_tag: Option<String>,
+    pub keepalive_s: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SessionIdRequest {
+    pub session_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SessionExecRequest {
+    pub session_id: String,
+    pub command: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SessionStartRequest {
+    pub session_id: String,
+    pub command: String,
+    pub initial_wait_s: Option<u64>,
+    pub follow_limit: Option<usize>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SessionFollowRequest {
+    pub command_id: String,
+    pub cursor: Option<String>,
+    pub wait_s: Option<u64>,
+    pub limit: Option<usize>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SessionCommandRequest {
+    pub command_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SessionSignalRequest {
+    pub command_id: Option<String>,
+    pub session_id: Option<String>,
+    pub signal: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ToolEnvelope<T> {
     pub ok: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -106,6 +153,7 @@ pub struct BackendHealth {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct BackendTools {
     pub ssh: bool,
+    pub sshpass: bool,
     pub rsync: bool,
     pub sftp: bool,
     pub scp: bool,
@@ -147,4 +195,41 @@ pub struct FileTextResponse {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct FileCommandResponse {
     pub result: FileCommandResult,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SessionOpenResponse {
+    pub session: SessionInfo,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SessionEnsureResponse {
+    pub session: SessionInfo,
+    pub created: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SessionListResponse {
+    pub sessions: Vec<SessionInfo>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SessionExecResponse {
+    pub result: SessionExecResult,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SessionStartResponse {
+    pub command_id: String,
+    pub initial: SessionFollowResult,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SessionFollowResponse {
+    pub result: SessionFollowResult,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct SessionSignalResponse {
+    pub result: SessionSignalResult,
 }

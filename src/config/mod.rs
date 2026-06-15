@@ -5,7 +5,7 @@ use std::path::Path;
 use tokio::fs;
 
 use crate::error::{ErrorKind, RemoteOpsError, Result};
-pub use model::{AppConfig, Defaults, ServerConfig, TargetConfig};
+pub use model::{AppConfig, AuthConfig, AuthMethod, Defaults, ServerConfig, TargetConfig};
 
 pub async fn load_config(path: Option<&Path>) -> Result<AppConfig> {
     let Some(path) = path else {

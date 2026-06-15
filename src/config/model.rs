@@ -28,6 +28,7 @@ pub struct Defaults {
     pub follow_limit: usize,
     pub output_max_bytes: usize,
     pub host_key_policy: String,
+    pub auth: AuthConfig,
 }
 
 impl Default for Defaults {
@@ -40,11 +41,31 @@ impl Default for Defaults {
             follow_limit: 8192,
             output_max_bytes: 8 * 1024 * 1024,
             host_key_policy: "openssh_default".to_string(),
+            auth: AuthConfig::default(),
         }
     }
 }
 
-/// 单个远程目标配置。认证细节默认交给 OpenSSH 配置和 agent 处理。
+/// SSH 认证方式。默认沿用 OpenSSH 配置、agent 和密钥。
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AuthMethod {
+    #[default]
+    Openssh,
+    Password,
+}
+
+/// 单个目标的认证配置。`password` 仅在 `method = "password"` 时使用。
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(default)]
+pub struct AuthConfig {
+    pub method: AuthMethod,
+    #[serde(skip_serializing)]
+    #[schemars(skip)]
+    pub password: Option<String>,
+}
+
+/// 单个远程目标配置。认证可显式指定，也可继续继承全局默认认证。
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(default)]
 pub struct TargetConfig {
@@ -53,6 +74,7 @@ pub struct TargetConfig {
     pub username: Option<String>,
     pub connect_timeout_s: Option<u64>,
     pub host_key_policy: Option<String>,
+    pub auth: Option<AuthConfig>,
 }
 
 impl Default for TargetConfig {
@@ -63,6 +85,7 @@ impl Default for TargetConfig {
             username: None,
             connect_timeout_s: None,
             host_key_policy: None,
+            auth: None,
         }
     }
 }
