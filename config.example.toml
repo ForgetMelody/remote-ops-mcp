@@ -1,0 +1,17 @@
+[server]
+transport = "stdio"
+
+[defaults]
+connect_timeout_s = 10
+run_timeout_s = 30
+initial_wait_s = 1
+follow_wait_s = 5
+follow_limit = 8192
+output_max_bytes = 8388608
+host_key_policy = "openssh_default"
+
+# 本机执行可直接省略 target，或传 target = "local"。
+# [targets.devbox]
+# host = "devbox.example.com"
+# port = 22
+# username = "deploy"
