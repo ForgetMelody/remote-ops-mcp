@@ -245,6 +245,12 @@ REMOTE_OPS_CONFIG="${HOME}/.config/remote-ops/config.toml" remote-ops-mcp
 - `remote_file_sync`
 - `remote_file_compare`
 
+路径参数约定：
+
+- `remote_file_list` / `remote_file_stat` 支持本机和远端当前用户 `~`、`~/...` 展开。
+- `remote_file_sync` / `remote_file_compare` 的本机路径支持 `~`、`~/...` 展开；远端 rsync 路径支持 `~/...`。
+- 为避免跨用户歧义，`~user` 不会被 MCP 自行展开。
+
 ## License
 
 MIT. 详见 `LICENSE`。

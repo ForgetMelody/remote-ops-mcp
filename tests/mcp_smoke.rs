@@ -142,6 +142,31 @@ async fn lists_tools_and_exercises_local_job_and_file_tools() {
     assert_eq!(sync["ok"], true);
     assert_eq!(fs::read_to_string(&copied).unwrap(), "remote ops file sync");
 
+    let home_list = service
+        .call_tool(CallToolRequestParams {
+            meta: None,
+            name: "remote_file_list".into(),
+            arguments: serde_json::json!({
+                "target": "local",
+                "path": "~",
+                "timeout_s": 5
+            })
+            .as_object()
+            .cloned(),
+            task: None,
+        })
+        .await
+        .expect("call remote_file_list with tilde");
+    let home_list = tool_json(home_list);
+    assert_eq!(home_list["ok"], true);
+    assert_eq!(home_list["data"]["exit_code"], 0);
+    assert!(
+        !home_list["data"]["stdout"]
+            .as_str()
+            .unwrap()
+            .contains("No such file")
+    );
+
     let stat = service
         .call_tool(CallToolRequestParams {
             meta: None,
